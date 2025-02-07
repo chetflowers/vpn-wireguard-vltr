@@ -1,17 +1,17 @@
-# Project Roadmap: VPN Setup Using VLTR and WireGuard
+# Project Roadmap: VPN Setup Using Vultr and WireGuard
 
 ## Introduction
 Overview of the project and its objectives.
 
 ## Prerequisites
-- A VLTR cloud account and instance details.
+- A Vultr cloud account and instance details.
 - Basic Linux command-line knowledge.
 - Installed WireGuard on both server and client machines.
 
 ## Step-by-Step Process
 
-### 1. Provisioning the VLTR Cloud Instance
-- Create and configure your VLTR server.
+### 1. Provisioning the Vultr Cloud Instance
+- Create and configure your Vultr server.
 - Set up necessary firewall rules.
 
 ### 2. Installing WireGuard
