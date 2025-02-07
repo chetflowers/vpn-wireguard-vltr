@@ -1,0 +1,12 @@
+[Interface]
+# Replace <your_server_private_key> with your actual server private key
+PrivateKey = <your_server_private_key>
+Address = 10.0.0.1/24
+ListenPort = 51820
+SaveConfig = true
+
+# Example Peer Configuration (for client setup)
+#[Peer]
+# Replace <client_public_key> with the client's public key
+#PublicKey = <client_public_key>
+#AllowedIPs = 10.0.0.2/32
