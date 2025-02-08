@@ -1,4 +1,4 @@
-# VPN WireGuard on Vultr - README Outline
+# VPN WireGuard on Vultr
 
 ## 1. Title and Introduction
 - **Title:** VPN WireGuard on Vultr
