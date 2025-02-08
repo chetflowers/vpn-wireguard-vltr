@@ -11,8 +11,10 @@ This repository documents the process of setting up a secure VPN using WireGuard
 - [Requirements](#requirements)
 - [Installation & Setup](#installation--setup)
   - [Server Setup](#server-setup)
+  - [Automated WireGuard Installation](#automated-wireguard-installation)
+  - [Firewall & NAT Configuration](#firewall--nat-configuration)
   - [Client Setup](#client-setup)
-- [Testing](#testing)
+- [Testing & Verification](#testing--verification)
 - [Screenshots](#screenshots)
 - [Troubleshooting](#troubleshooting)
 - [License](#license)
@@ -22,12 +24,16 @@ This repository documents the process of setting up a secure VPN using WireGuard
 
 ## 1. Overview
 
-**Project Demonstrates:**
-- Provisioning a Debian-based server on Vultr.
-- Installing and configuring WireGuard.
-- Setting up NAT and IP forwarding for full-tunnel VPN access.
-- Generating and configuring client keys and configurations.
-- Testing connectivity.
+This project demonstrates the deployment of a **self-hosted VPN** using WireGuard on a Vultr cloud instance. It showcases **automated deployment, firewall security, and full traffic encryption** for privacy and secure remote access.
+
+### **Key Features**
+✅ **Automated Deployment**: Bash script automates installation and configuration.  
+✅ **Full-Tunnel Routing**: All internet traffic is routed through the VPN.  
+✅ **Cloud-Based VPN**: Hosted on **Vultr Debian 12** with key-based authentication.  
+✅ **Firewall & NAT Rules**: Configured `iptables` for NAT masquerading and security.  
+✅ **Auto-Start on Boot**: WireGuard is configured to start automatically.  
+✅ **Cross-Platform Support**: Mac, Linux, iOS, and Android supported.  
+✅ **Testing & Debugging Steps**: Connectivity and security verification included.  
 
 ---
 
@@ -52,62 +58,96 @@ vpn-wireguard-vultr/
 
 ## 3. Requirements
 
-- **Vultr Account:** with a Debian-based instance (Debian 12 recommended).
-- **Access:** SSH access and sudo privileges on the server.
-- **Knowledge:** Basic familiarity with Linux command-line operations.
-- **Client Device:** (e.g., Mac) with the official WireGuard client installed.
+- **Vultr Account** with a Debian-based instance (Debian 12 recommended).
+- **SSH Access** and sudo privileges on the server.
+- **Basic Networking & Linux CLI Knowledge**.
+- **WireGuard Client** installed on macOS, Linux, or mobile.
 
 ---
 
 ## 4. Installation & Setup
 
-### Server Setup
+### **Server Setup**
 
 1. **Provision the Vultr Instance:**
-   - Deploy a new Debian 12 instance.
-   - Minimum specs: 1 vCPU, 1 GB RAM, 25 GB SSD.
-   - Add your SSH key during provisioning.
+   - Deploy a **Debian 12** instance.
+   - Minimum specs: **1 vCPU, 1 GB RAM, 25 GB SSD**.
+   - Add an **SSH key** for secure authentication.
   
 ![Vultr Instance](screenshots/VultrInstance.png)
 ![Vultr Dashboard](screenshots/VultrDashboard.png)
 
-2. **Clone the Repository on the Server:**
+2. **Connect to the Server via SSH:**
+   ```bash
+   ssh root@<server-ip>
+   ```
+![SSH Root](screenshots/sshroot@64.237.48.180.png)
+
+3. **Update & Upgrade System Packages:**
+   ```bash
+   sudo apt update && sudo apt upgrade -y
+   ```
+![Update && Upgrade](screenshots/aptupdate&&aptupgrade.png)
+
+4. **Install Required Networking Tools:**
+   ```bash
+   sudo apt install curl net-tools traceroute -y
+   ```
+![WireGuard Tools](screenshots/install-wireguard-tools.png)
+
+---
+
+### **Automated WireGuard Installation**
+
+1. **Clone the Repository:**
    ```bash
    git clone https://github.com/chetflowers/vpn-wireguard-vltr.git
-   cd vpn-wireguard-vultr
+   cd vpn-wireguard-vultr/scripts
    ```
 
-3. **Run the WireGuard Installation Script:**
+2. **Run the WireGuard Installation Script:**
    ```bash
-   cd scripts
    ./install-wireguard.sh
    ```
-![Install WireGuard](screenshots/scripts:install-wireguard.png)
-   
-4. **Enable & Start WireGuard:**
+   ![Install WireGuard](screenshots/scripts:install-wireguard.png)
+
+3. **Script Actions:**
+   - Installs WireGuard and dependencies.
+   - Enables IP forwarding.
+   - Generates **server public/private keys**.
+   - Creates and applies `/etc/wireguard/wg0.conf`.
+   - Starts and enables WireGuard to **launch on boot**:
+     ```bash
+     sudo systemctl enable wg-quick@wg0
+     sudo systemctl start wg-quick@wg0
+     ```
+---
+
+### **Firewall & NAT Configuration**
+
+1. **Enable IP Forwarding:**
    ```bash
-   systemctl enable wg-quick@wg0
-   systemctl start wg-quick@wg0
+   echo "net.ipv4.ip_forward=1" | sudo tee -a /etc/sysctl.conf
+   sudo sysctl -p
    ```
 
-  ![Enable WireGuard](screenshots/enable-wg-quick@wgo.png)
-  ![Enable WireGuard Finish Pub Key](screenshots/install-wireguard-sh-PubKey.png)
-
-5. **Set Up NAT (Masquerading):**
+2. **Configure NAT Masquerading for Internet Access:**
    ```bash
-   iptables -t nat -A POSTROUTING -o enp1s0 -j MASQUERADE
-   sysctl -p
+   sudo iptables -t nat -A POSTROUTING -o enp1s0 -j MASQUERADE
    ```
-   ![IP Tables](screenshots/iptables.png)
 
-### Client Setup
+![IP Tables](screenshots/iptables.png)
+
+---
+
+### **Client Setup**
 
 1. **Generate Client Keys:**
    ```bash
    wg genkey | tee client_private.key | wg pubkey > client_public.key
    ```
 
-2. **Configure the Client:**
+2. **Configure the WireGuard Client (`wg0-client.conf`):**
    ```ini
    [Interface]
    PrivateKey = <your client private key>
@@ -115,43 +155,38 @@ vpn-wireguard-vultr/
    DNS = 8.8.8.8
 
    [Peer]
-   PublicKey = <server public key from install script>
-   Endpoint = 64.237.48.180:51820
+   PublicKey = <server public key>
+   Endpoint = <server-ip>:51820
    AllowedIPs = 0.0.0.0/0, ::/0
    PersistentKeepalive = 25
    ```
 
-3. **Add the Client as a Peer on the Server:**
-   ```ini
-   [Peer]
-   PublicKey = <contents of client_public.key>
-   AllowedIPs = 10.0.0.2/32
-   ```
-![Client Interface](screenshots/client-interface.png)
+  ![Client Interface](screenshots/client-interface.png)
 
-4. **Restart WireGuard:**
+3. **Restart WireGuard on the Client:**
    ```bash
    wg-quick down wg0
    wg-quick up wg0
    ```
-
 ---
 
-## 5. Testing
+## 5. Testing & Verification
 
-- **Ping Test:**  
-  ```bash
-  ping 8.8.8.8
-  ```
-- **Traceroute Test:**  
-  ```bash
-  traceroute 8.8.8.8
-  ```
-- **Public IP Verification:**  
-  ```bash
-  curl https://api.ipify.org
-  ```
-![Ping And Traceroute](screenshots/ping-success.png)
+1. **Ping Test:**  
+   ```bash
+   ping 8.8.8.8
+   ```
+
+2. **Traceroute Test:**  
+   ```bash
+   traceroute 8.8.8.8
+   ```
+
+3. **Public IP Verification:**  
+   ```bash
+   curl https://api.ipify.org
+   ```
+
 ![Public IP Verification](screenshots/api-ipify-org.png)
 
 ---
@@ -160,52 +195,36 @@ vpn-wireguard-vultr/
 
 Below are relevant screenshots capturing various stages of the VPN setup process:
 
-### **Vultr Server Setup**
-- **Vultr Dashboard:**  
-  ![VultrDashboard](screenshots/VultrDashboard.png)
-- **Vultr Instance Details:**  
-  ![VultrInstance](screenshots/VultrInstance.png)
+- **Provisioning Vultr Instance**
+- **Installing & Configuring WireGuard**
+- **Firewall & NAT Configuration**
+- **Client Connectivity & Testing**
 
-### **WireGuard Installation and Configuration**
-- **Updating and Upgrading System:**  
-  ![apt update && apt upgrade](screenshots/aptupdate&&apt upgrade.png)
-- **Installing WireGuard:**  
-  ![install-wireguard-tools](screenshots/install-wireguard-tools.png)
-- **Running install-wireguard.sh:**  
-  ![install-wireguard-sh](screenshots/install-wireguard-sh.png)
-- **Generating WireGuard Keys:**  
-  ![genkey](screenshots/genkey.png)
-- **WireGuard Server Configuration (`wg0.conf`):**  
-  ![wg0.conf](screenshots/wg0.conf.png)
-- **Enabling and Starting WireGuard (`wg-quick`):**  
-  ![enable-wg-quick@wgo](screenshots/enable-wg-quick@wgo.png)
-
-### **Network and Routing Configuration**
-- **Checking Network Interfaces (`ip a`):**  
-  ![ip-a](screenshots/ip-a.png)
-- **Configuring IP Tables (NAT Masquerade):**  
-  ![MASQUERADE](screenshots/MASQUERADE.png)
-- **Verifying IP Tables Configuration:**  
-  ![iptables](screenshots/iptables.png)
-
-### **Testing and Verification**
-- **Verifying WireGuard Interface (`wg show`):**  
-  ![wg-show](screenshots/wg-show.png)
-- **Checking Client Configuration (`wg0-client.conf`):**  
-  ![wg0-client](screenshots/wg0-client.png)
-- **Pinging Google DNS to Confirm Connectivity (`ping 8.8.8.8`):**  
-  ![ping-success](screenshots/ping-success.png)
-- **Checking Public IP (`api.ipify.org`):**  
-  ![api-ipify-org](screenshots/api-ipify-org.png)
+(Screenshots included in `screenshots/` folder)
 
 ---
 
 ## 7. Troubleshooting
 
-- **DNS Issues:** Ensure `DNS = 8.8.8.8` is set in the client configuration.
-- **Routing Issues:** Check your routing table:
+- **WireGuard Not Starting on Boot?**
   ```bash
-  netstat -rn | grep default
+  sudo systemctl enable wg-quick@wg0
+  sudo systemctl restart wg-quick@wg0
+  ```
+
+- **No Internet Access from VPN Client?**
+  ```bash
+  sudo iptables -t nat -A POSTROUTING -o enp1s0 -j MASQUERADE
+  ```
+
+- **Verify Server Configuration:**
+  ```bash
+  wg show
+  ```
+
+- **Check Server Logs for Errors:**
+  ```bash
+  sudo journalctl -u wg-quick@wg0 --no-pager | tail -20
   ```
 
 ---
