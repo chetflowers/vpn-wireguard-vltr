@@ -67,6 +67,9 @@ vpn-wireguard-vultr/
    - Deploy a new Debian 12 instance.
    - Minimum specs: 1 vCPU, 1 GB RAM, 25 GB SSD.
    - Add your SSH key during provisioning.
+  
+![Vultr Instance](screenshots/VultrInstance.png)
+![Vultr Dashboard](screenshots/VultrDashboard.png)
 
 2. **Clone the Repository on the Server:**
    ```bash
@@ -79,18 +82,23 @@ vpn-wireguard-vultr/
    cd scripts
    ./install-wireguard.sh
    ```
-
+![Install WireGuard](screenshots/scripts:install-wireguard.png)
+   
 4. **Enable & Start WireGuard:**
    ```bash
    systemctl enable wg-quick@wg0
    systemctl start wg-quick@wg0
    ```
 
+  ![Enable WireGuard](screenshots/enable-wg-quick@wgo.png)
+  ![Enable WireGuard Finish Pub Key](screenshots/install-wireguard-sh-PubKey.png)
+
 5. **Set Up NAT (Masquerading):**
    ```bash
    iptables -t nat -A POSTROUTING -o enp1s0 -j MASQUERADE
    sysctl -p
    ```
+   ![IP Tables](screenshots/iptables.png)
 
 ### Client Setup
 
@@ -119,6 +127,7 @@ vpn-wireguard-vultr/
    PublicKey = <contents of client_public.key>
    AllowedIPs = 10.0.0.2/32
    ```
+![Client Interface](screenshots/client-interface.png)
 
 4. **Restart WireGuard:**
    ```bash
@@ -142,6 +151,8 @@ vpn-wireguard-vultr/
   ```bash
   curl https://api.ipify.org
   ```
+![Ping And Traceroute](screenshots/ping-success.png)
+![Public IP Verification](screenshots/api-ipify-org.png)
 
 ---
 
